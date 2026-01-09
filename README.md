@@ -1,6 +1,7 @@
 # Custom Event Manager
 
 A professional WordPress plugin for managing events with custom post types, admin dashboard, and shortcodes.
+This plugin demonstrates production-grade WordPress plugin development using core APIs, secure coding practices, and extensible architecture.
 
 ## Overview
 
@@ -335,6 +336,13 @@ for event in events:
 1. Download or clone the plugin into `/wp-content/plugins/custom-event-manager/`.
 2. Activate the plugin from WordPress Admin → Plugins.
 3. Navigate to **Events** in the admin menu to start creating events.
+
+## Local Setup
+
+1. Install WordPress 5.0+.
+2. Clone this plugin into `wp-content/plugins/`.
+3. Activate it from **Admin → Plugins**.
+4. Configure options under **Events → Settings**.
 
 ## Quick Start
 
