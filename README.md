@@ -11,10 +11,6 @@ This plugin demonstrates production-grade WordPress plugin development using cor
 - Settings page for pagination, currency, RSVP toggle
 - Advanced filtering: date range, location, keyword search (preserves pagination)
 
-## Screenshots
-
-- Admin – Events list & metabox: [assets/screenshots/admin-events.png](assets/screenshots/admin-events.png)
-- Frontend – Event list with filters: [assets/screenshots/frontend-events.png](assets/screenshots/frontend-events.png)
 
 ## Features
 
@@ -818,4 +814,6 @@ https://github.com/vizahat36/Custom-WordPress-Plugin-Event-Manager
 - ✅ STEP 6: RSVP functionality with AJAX and duplicate prevention
 - ✅ STEP 7: Email notifications with wp_mail() and filters
 - ✅ STEP 8: REST API endpoints for headless WordPress
+- ✅ STEP 9: Advanced filtering & search with query optimization
+- ✅ STEP 10: Documentation and README polish
 - Production-ready security implementation
