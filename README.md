@@ -2,6 +2,19 @@
 
 A professional WordPress plugin for managing events with custom post types, admin dashboard, and shortcodes.
 
+## Overview
+
+- Headless-ready event manager with CPT, taxonomy, REST API, and AJAX RSVP
+- Frontend shortcodes for listings, single event view, RSVP, and filters
+- Admin metabox for event details (date, time, location, capacity)
+- Settings page for pagination, currency, RSVP toggle
+- Advanced filtering: date range, location, keyword search (preserves pagination)
+
+## Screenshots
+
+- Admin – Events list & metabox: [assets/screenshots/admin-events.png](assets/screenshots/admin-events.png)
+- Frontend – Event list with filters: [assets/screenshots/frontend-events.png](assets/screenshots/frontend-events.png)
+
 ## Features
 
 - **Custom Post Type**: Register and manage events natively within WordPress.
