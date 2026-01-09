@@ -1,0 +1,78 @@
+/* Custom Event Manager Stylesheet */
+
+.cem-events-list {
+    margin: 20px 0;
+}
+
+.cem-event-item {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: #f9f9f9;
+    transition: box-shadow 0.3s ease;
+}
+
+.cem-event-item:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cem-event-item h3 {
+    margin-top: 0;
+    color: #333;
+    font-size: 1.25em;
+}
+
+.cem-event-item p {
+    margin: 10px 0;
+    color: #666;
+}
+
+.cem-read-more {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 8px 16px;
+    background-color: #0073aa;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.cem-read-more:hover {
+    background-color: #005a87;
+}
+
+.cem-event-single {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.cem-event-single h2 {
+    color: #333;
+    font-size: 2em;
+    margin-bottom: 15px;
+}
+
+.cem-metabox {
+    margin: 10px 0;
+}
+
+.cem-metabox p {
+    margin-bottom: 15px;
+}
+
+.cem-metabox label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.cem-metabox input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1em;
+}
