@@ -24,12 +24,13 @@ if ( ! class_exists( 'CEM_Event_Shortcode' ) ) {
             add_shortcode( 'cem_events', array( $this, 'display_events_list' ) ); // Backward compatibility.
             add_shortcode( 'event_single', array( $this, 'display_single_event' ) );
             add_shortcode( 'cem_event_single', array( $this, 'display_single_event' ) ); // Backward compatibility.
+            add_shortcode( 'event_filters', array( $this, 'display_event_filters' ) );
         }
 
         /**
          * Display all events as a list.
          *
-         * Shortcode: [event_list posts_per_page="10" category="event-category" orderby="date"]
+         * Shortcode: [event_list posts_per_page="10" category="event-category" orderby="date" date_from="2026-01-01" date_to="2026-12-31" location="New York" search="conference" show_filters="yes"]
          *
          * @param array  $atts    Shortcode attributes.
          * @param string $content Shortcode content (unused).
@@ -45,6 +46,11 @@ if ( ! class_exists( 'CEM_Event_Shortcode' ) ) {
                     'order'          => 'ASC',
                     'category'       => '',
                     'paged'          => max( 1, get_query_var( 'paged' ) ),
+                    'date_from'      => '',
+                    'date_to'        => '',
+                    'location'       => '',
+                    'search'         => '',
+                    'show_filters'   => 'no',
                 ),
                 $atts,
                 'event_list'
@@ -56,6 +62,28 @@ if ( ! class_exists( 'CEM_Event_Shortcode' ) ) {
             $meta_key       = sanitize_text_field( $atts['meta_key'] );
             $order          = strtoupper( sanitize_text_field( $atts['order'] ) );
             $paged          = intval( $atts['paged'] );
+            $date_from      = sanitize_text_field( $atts['date_from'] );
+            $date_to        = sanitize_text_field( $atts['date_to'] );
+            $location       = sanitize_text_field( $atts['location'] );
+            $search         = sanitize_text_field( $atts['search'] );
+            $show_filters   = sanitize_text_field( $atts['show_filters'] );
+
+            // Check for $_GET parameters (from filter form submission).
+            if ( ! empty( $_GET['cem_date_from'] ) ) {
+                $date_from = sanitize_text_field( wp_unslash( $_GET['cem_date_from'] ) );
+            }
+            if ( ! empty( $_GET['cem_date_to'] ) ) {
+                $date_to = sanitize_text_field( wp_unslash( $_GET['cem_date_to'] ) );
+            }
+            if ( ! empty( $_GET['cem_location'] ) ) {
+                $location = sanitize_text_field( wp_unslash( $_GET['cem_location'] ) );
+            }
+            if ( ! empty( $_GET['cem_search'] ) ) {
+                $search = sanitize_text_field( wp_unslash( $_GET['cem_search'] ) );
+            }
+            if ( ! empty( $_GET['cem_paged'] ) ) {
+                $paged = intval( $_GET['cem_paged'] );
+            }
 
             // Validate order direction.
             $order = in_array( $order, array( 'ASC', 'DESC' ), true ) ? $order : 'ASC';
@@ -81,19 +109,82 @@ if ( ! class_exists( 'CEM_Event_Shortcode' ) ) {
                 );
             }
 
-            // Apply filter for extensibility.
+            // Add date range filter.
+            if ( ! empty( $date_from ) || ! empty( $date_to ) ) {
+                if ( ! isset( $query_args['meta_query'] ) ) {
+                    $query_args['meta_query'] = array(); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query
+                }
+
+                $date_query = array(
+                    'key'  => '_cem_event_date',
+                    'type' => 'DATE',
+                );
+
+                if ( ! empty( $date_from ) && ! empty( $date_to ) ) {
+                    // Date range.
+                    $date_query['value']   = array( $date_from, $date_to );
+                    $date_query['compare'] = 'BETWEEN';
+                } elseif ( ! empty( $date_from ) ) {
+                    // From date onwards.
+                    $date_query['value']   = $date_from;
+                    $date_query['compare'] = '>=';
+                } elseif ( ! empty( $date_to ) ) {
+                    // Up to date.
+                    $date_query['value']   = $date_to;
+                    $date_query['compare'] = '<=';
+                }
+
+                $query_args['meta_query'][] = $date_query;
+            }
+
+            // Add location filter.
+            if ( ! empty( $location ) ) {
+                if ( ! isset( $query_args['meta_query'] ) ) {
+                    $query_args['meta_query'] = array(); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query
+                }
+
+                $query_args['meta_query'][] = array(
+                    'key'     => '_cem_event_location',
+                    'value'   => $location,
+                    'compare' => 'LIKE',
+                );
+            }
+
+            // Add keyword search.
+            if ( ! empty( $search ) ) {
+                $query_args['s'] = $search;
+            }
+
+            // Set meta_query relation if multiple meta queries exist.
+            if ( isset( $query_args['meta_query'] ) && count( $query_args['meta_query'] ) > 1 ) {
+                $query_args['meta_query']['relation'] = 'AND';
+            }
+
+            /**
+             * Filter event query arguments.
+             *
+             * @since 1.0.0
+             * @param array $query_args WP_Query arguments.
+             */
             $query_args = apply_filters( 'cem_event_query_args', $query_args );
+            $query_args = apply_filters( 'cem_event_list_query_args', $query_args, $atts );
 
             // Execute query (no direct DB access, uses WP_Query API).
             $query = new WP_Query( $query_args );
 
-            // Handle no results case.
-            if ( ! $query->have_posts() ) {
-                return '<div class="cem-no-events"><p>' . esc_html__( 'No events found.', 'custom-event-manager' ) . '</p></div>';
-            }
-
             // Start output buffering for clean HTML generation.
             ob_start();
+
+            // Render filter form if enabled.
+            if ( 'yes' === $show_filters ) {
+                $this->render_filter_form( $date_from, $date_to, $location, $search );
+            }
+
+            // Handle no results case.
+            if ( ! $query->have_posts() ) {
+                echo '<div class="cem-no-events"><p>' . esc_html__( 'No events found.', 'custom-event-manager' ) . '</p></div>';
+                return ob_get_clean();
+            }
 
             echo '<div class="cem-events-list" data-page="' . esc_attr( $paged ) . '">';
 
@@ -107,13 +198,111 @@ if ( ! class_exists( 'CEM_Event_Shortcode' ) ) {
 
             // Render pagination if needed.
             if ( $query->max_num_pages > 1 ) {
-                $this->render_pagination( $query );
+                $this->render_pagination( $query, $date_from, $date_to, $location, $search );
             }
 
             // Reset post data.
             wp_reset_postdata();
 
             // Return buffered output.
+            return ob_get_clean();
+        }
+
+        /**
+         * Render filter form for events.
+         *
+         * @since 1.0.0
+         * @param string $date_from Current date_from filter value.
+         * @param string $date_to   Current date_to filter value.
+         * @param string $location  Current location filter value.
+         * @param string $search    Current search filter value.
+         */
+        private function render_filter_form( $date_from = '', $date_to = '', $location = '', $search = '' ) {
+            echo '<div class="cem-filter-form">';
+            echo '<form method="get" action="" class="cem-filters">';
+
+            // Preserve existing query vars.
+            foreach ( $_GET as $key => $value ) {
+                if ( ! in_array( $key, array( 'cem_date_from', 'cem_date_to', 'cem_location', 'cem_search', 'cem_paged' ), true ) ) {
+                    echo '<input type="hidden" name="' . esc_attr( $key ) . '" value="' . esc_attr( $value ) . '">';
+                }
+            }
+
+            echo '<div class="cem-filter-row">';
+
+            // Date from filter.
+            echo '<div class="cem-filter-field">';
+            echo '<label for="cem_date_from">' . esc_html__( 'From Date:', 'custom-event-manager' ) . '</label>';
+            echo '<input type="date" id="cem_date_from" name="cem_date_from" value="' . esc_attr( $date_from ) . '" class="cem-filter-input">';
+            echo '</div>';
+
+            // Date to filter.
+            echo '<div class="cem-filter-field">';
+            echo '<label for="cem_date_to">' . esc_html__( 'To Date:', 'custom-event-manager' ) . '</label>';
+            echo '<input type="date" id="cem_date_to" name="cem_date_to" value="' . esc_attr( $date_to ) . '" class="cem-filter-input">';
+            echo '</div>';
+
+            // Location filter.
+            echo '<div class="cem-filter-field">';
+            echo '<label for="cem_location">' . esc_html__( 'Location:', 'custom-event-manager' ) . '</label>';
+            echo '<input type="text" id="cem_location" name="cem_location" value="' . esc_attr( $location ) . '" placeholder="' . esc_attr__( 'Enter location', 'custom-event-manager' ) . '" class="cem-filter-input">';
+            echo '</div>';
+
+            // Search filter.
+            echo '<div class="cem-filter-field">';
+            echo '<label for="cem_search">' . esc_html__( 'Search:', 'custom-event-manager' ) . '</label>';
+            echo '<input type="text" id="cem_search" name="cem_search" value="' . esc_attr( $search ) . '" placeholder="' . esc_attr__( 'Search events...', 'custom-event-manager' ) . '" class="cem-filter-input">';
+            echo '</div>';
+
+            echo '</div>';
+
+            // Filter buttons.
+            echo '<div class="cem-filter-actions">';
+            echo '<button type="submit" class="cem-filter-submit">' . esc_html__( 'Apply Filters', 'custom-event-manager' ) . '</button>';
+            $reset_url = strtok( $_SERVER['REQUEST_URI'], '?' );
+            echo '<a href="' . esc_url( $reset_url ) . '" class="cem-filter-reset">' . esc_html__( 'Clear Filters', 'custom-event-manager' ) . '</a>';
+            echo '</div>';
+
+            echo '</form>';
+            echo '</div>';
+
+            /**
+             * Hook after filter form.
+             *
+             * @since 1.0.0
+             */
+            do_action( 'cem_after_filter_form' );
+        }
+
+        /**
+         * Display standalone filter form shortcode.
+         *
+         * Shortcode: [event_filters]
+         *
+         * @since 1.0.0
+         * @param array $atts Shortcode attributes.
+         * @return string HTML output.
+         */
+        public function display_event_filters( $atts ) {
+            $atts = shortcode_atts(
+                array(
+                    'date_from' => '',
+                    'date_to'   => '',
+                    'location'  => '',
+                    'search'    => '',
+                ),
+                $atts,
+                'event_filters'
+            );
+
+            // Check for $_GET parameters.
+            $date_from = ! empty( $_GET['cem_date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['cem_date_from'] ) ) : $atts['date_from'];
+            $date_to   = ! empty( $_GET['cem_date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['cem_date_to'] ) ) : $atts['date_to'];
+            $location  = ! empty( $_GET['cem_location'] ) ? sanitize_text_field( wp_unslash( $_GET['cem_location'] ) ) : $atts['location'];
+            $search    = ! empty( $_GET['cem_search'] ) ? sanitize_text_field( wp_unslash( $_GET['cem_search'] ) ) : $atts['search'];
+
+            ob_start();
+            $this->render_filter_form( $date_from, $date_to, $location, $search );
             return ob_get_clean();
         }
 
@@ -165,17 +354,43 @@ if ( ! class_exists( 'CEM_Event_Shortcode' ) ) {
         /**
          * Render pagination links.
          *
-         * @param WP_Query $query WP_Query object.
+         * @param WP_Query $query     WP_Query object.
+         * @param string   $date_from Current date_from filter.
+         * @param string   $date_to   Current date_to filter.
+         * @param string   $location  Current location filter.
+         * @param string   $search    Current search filter.
          */
-        private function render_pagination( $query ) {
+        private function render_pagination( $query, $date_from = '', $date_to = '', $location = '', $search = '' ) {
+            // Build query string for pagination with filters.
+            $query_string = array();
+
+            if ( ! empty( $date_from ) ) {
+                $query_string['cem_date_from'] = $date_from;
+            }
+            if ( ! empty( $date_to ) ) {
+                $query_string['cem_date_to'] = $date_to;
+            }
+            if ( ! empty( $location ) ) {
+                $query_string['cem_location'] = $location;
+            }
+            if ( ! empty( $search ) ) {
+                $query_string['cem_search'] = $search;
+            }
+
+            // Build base URL.
+            $base = ! empty( $query_string ) ? add_query_arg( $query_string, get_permalink() ) : get_permalink();
+            $base = add_query_arg( 'cem_paged', '%#%', $base );
+
+            $current_page = max( 1, ! empty( $_GET['cem_paged'] ) ? intval( $_GET['cem_paged'] ) : get_query_var( 'paged' ) );
+
             echo '<div class="cem-pagination">';
             echo wp_kses_post(
                 paginate_links(
                     array(
-                        'base'      => add_query_arg( 'paged', '%#%' ),
-                        'format'    => '?paged=%#%',
+                        'base'      => $base,
+                        'format'    => '?cem_paged=%#%',
                         'total'     => $query->max_num_pages,
-                        'current'   => max( 1, get_query_var( 'paged' ) ),
+                        'current'   => $current_page,
                         'prev_text' => esc_html__( '← Previous', 'custom-event-manager' ),
                         'next_text' => esc_html__( 'Next →', 'custom-event-manager' ),
                         'type'      => 'list',

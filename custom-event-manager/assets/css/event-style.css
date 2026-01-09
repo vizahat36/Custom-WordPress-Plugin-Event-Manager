@@ -383,3 +383,112 @@
 .cem-metabox p {
     margin-bottom: 15px;
 }
+
+/* Event Filters */
+.cem-filter-form {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+}
+
+.cem-filters {
+    margin: 0;
+}
+
+.cem-filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.cem-filter-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.cem-filter-field label {
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9em;
+}
+
+.cem-filter-input {
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.cem-filter-input:focus {
+    outline: none;
+    border-color: #0073aa;
+    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
+}
+
+.cem-filter-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.cem-filter-submit {
+    padding: 12px 24px;
+    background-color: #0073aa;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.cem-filter-submit:hover {
+    background-color: #005a87;
+}
+
+.cem-filter-submit:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.2);
+}
+
+.cem-filter-reset {
+    padding: 12px 24px;
+    background-color: #fff;
+    color: #666;
+    text-decoration: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-block;
+    font-size: 14px;
+}
+
+.cem-filter-reset:hover {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+/* Responsive Filter Layout */
+@media (max-width: 768px) {
+    .cem-filter-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .cem-filter-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .cem-filter-submit,
+    .cem-filter-reset {
+        width: 100%;
+        text-align: center;
+    }
+}

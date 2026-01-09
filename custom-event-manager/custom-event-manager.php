@@ -28,6 +28,7 @@ require_once CEM_PLUGIN_DIR . 'includes/class-event-settings.php';
 require_once CEM_PLUGIN_DIR . 'includes/class-event-rsvp.php';
 require_once CEM_PLUGIN_DIR . 'includes/class-email-notifications.php';
 require_once CEM_PLUGIN_DIR . 'includes/class-event-rest-api.php';
+require_once CEM_PLUGIN_DIR . 'includes/class-rest-api-filters.php';
 require_once CEM_PLUGIN_DIR . 'includes/helpers.php';
 require_once CEM_PLUGIN_DIR . 'admin/admin-settings-page.php';
 
