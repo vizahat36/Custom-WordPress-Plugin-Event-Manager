@@ -1,4 +1,4 @@
-# Custom Event Manager
+# Custom WordPress Plugin: Event Manager
 
 A professional WordPress plugin for managing events with custom post types, admin dashboard, and shortcodes.
 This plugin demonstrates production-grade WordPress plugin development using core APIs, secure coding practices, and extensible architecture.
