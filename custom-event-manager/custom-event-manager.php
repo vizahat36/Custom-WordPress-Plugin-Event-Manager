@@ -22,6 +22,7 @@ define( 'CEM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 // Load required classes and functions.
 require_once CEM_PLUGIN_DIR . 'includes/class-cem.php';
 require_once CEM_PLUGIN_DIR . 'includes/class-event-post-type.php';
+require_once CEM_PLUGIN_DIR . 'includes/class-event-metabox.php';
 require_once CEM_PLUGIN_DIR . 'includes/class-event-shortcode.php';
 require_once CEM_PLUGIN_DIR . 'includes/class-event-settings.php';
 require_once CEM_PLUGIN_DIR . 'includes/helpers.php';
@@ -40,6 +41,7 @@ if ( ! class_exists( 'CEM_Plugin' ) ) {
          */
         public static function init() {
             new CEM_Event_Post_Type();
+            new CEM_Event_Metabox();
             new CEM_Event_Shortcode();
             new CEM_Event_Settings();
 
@@ -59,7 +61,9 @@ if ( ! class_exists( 'CEM_Plugin' ) ) {
          * Enqueue admin assets.
          */
         public static function enqueue_admin_assets() {
-            if ( 'edit.php' === basename( $_SERVER['SCRIPT_NAME'] ) && isset( $_GET['post_type'] ) && 'event' === $_GET['post_type'] ) {
+            // Load admin styles and scripts on event edit pages.
+            $current_screen = get_current_screen();
+            if ( 'event' === $current_screen->post_type ) {
                 wp_enqueue_style( 'cem-admin-style', CEM_PLUGIN_URL . 'assets/css/event-style.css', array(), CEM_VERSION );
             }
         }
