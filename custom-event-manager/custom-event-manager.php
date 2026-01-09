@@ -25,6 +25,7 @@ require_once CEM_PLUGIN_DIR . 'includes/class-event-post-type.php';
 require_once CEM_PLUGIN_DIR . 'includes/class-event-metabox.php';
 require_once CEM_PLUGIN_DIR . 'includes/class-event-shortcode.php';
 require_once CEM_PLUGIN_DIR . 'includes/class-event-settings.php';
+require_once CEM_PLUGIN_DIR . 'includes/class-event-rsvp.php';
 require_once CEM_PLUGIN_DIR . 'includes/helpers.php';
 require_once CEM_PLUGIN_DIR . 'admin/admin-settings-page.php';
 
@@ -44,6 +45,7 @@ if ( ! class_exists( 'CEM_Plugin' ) ) {
             new CEM_Event_Metabox();
             new CEM_Event_Shortcode();
             new CEM_Event_Settings();
+            new CEM_Event_RSVP();
 
             add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_assets' ) );
             add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_assets' ) );
@@ -55,6 +57,11 @@ if ( ! class_exists( 'CEM_Plugin' ) ) {
         public static function enqueue_frontend_assets() {
             wp_enqueue_style( 'cem-style', CEM_PLUGIN_URL . 'assets/css/event-style.css', array(), CEM_VERSION );
             wp_enqueue_script( 'cem-script', CEM_PLUGIN_URL . 'assets/js/event-script.js', array( 'jquery' ), CEM_VERSION, true );
+
+            // Localize script for AJAX.
+            wp_localize_script( 'cem-script', 'cemAjax', array(
+                'ajaxurl' => admin_url( 'admin-ajax.php' ),
+            ) );
         }
 
         /**

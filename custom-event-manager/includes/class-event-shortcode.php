@@ -251,12 +251,68 @@ if ( ! class_exists( 'CEM_Event_Shortcode' ) ) {
             // Event content.
             echo '<div class="cem-event-content">' . wp_kses_post( wpautop( $post->post_content ) ) . '</div>';
 
+            // Render RSVP form if enabled.
+            if ( get_option( 'cem_enable_rsvp' ) ) {
+                $this->render_rsvp_form( $post_id );
+            }
+
             // Action hook for extending single event display.
             do_action( 'cem_single_event_footer', $post_id );
 
             echo '</div>';
 
             return ob_get_clean();
+        }
+
+        /**
+         * Render RSVP form for event.
+         *
+         * @param int $post_id Event post ID.
+         */
+        private function render_rsvp_form( $post_id ) {
+            // Create nonce for AJAX.
+            $nonce = wp_create_nonce( 'cem_rsvp_nonce' );
+
+            echo '<div class="cem-rsvp-section">';
+            echo '<h3>' . esc_html__( 'RSVP to this Event', 'custom-event-manager' ) . '</h3>';
+
+            // Get event capacity and RSVP count.
+            $capacity = intval( get_post_meta( $post_id, '_cem_event_capacity', true ) );
+            if ( $capacity > 0 ) {
+                // Count RSVPs using helper.
+                $rsvp_handler = new CEM_Event_RSVP();
+                $rsvp_count = $rsvp_handler->get_event_rsvp_count( $post_id );
+                $remaining = $capacity - $rsvp_count;
+
+                if ( $remaining > 0 ) {
+                    echo '<p class="cem-capacity-info">' . sprintf(
+                        esc_html__( '%d spot(s) remaining', 'custom-event-manager' ),
+                        $remaining
+                    ) . '</p>';
+                } else {
+                    echo '<p class="cem-capacity-full">' . esc_html__( 'This event has reached maximum capacity.', 'custom-event-manager' ) . '</p>';
+                }
+            }
+
+            echo '<form id="cem-rsvp-form" class="cem-rsvp-form" data-event-id="' . esc_attr( $post_id ) . '" data-nonce="' . esc_attr( $nonce ) . '">';
+            echo '<div class="cem-form-group">';
+            echo '<label for="cem_rsvp_name">' . esc_html__( 'Full Name', 'custom-event-manager' ) . ' <span class="required">*</span></label>';
+            echo '<input type="text" id="cem_rsvp_name" name="cem_rsvp_name" required placeholder="' . esc_attr__( 'Your name', 'custom-event-manager' ) . '" />';
+            echo '</div>';
+
+            echo '<div class="cem-form-group">';
+            echo '<label for="cem_rsvp_email">' . esc_html__( 'Email Address', 'custom-event-manager' ) . ' <span class="required">*</span></label>';
+            echo '<input type="email" id="cem_rsvp_email" name="cem_rsvp_email" required placeholder="' . esc_attr__( 'your@email.com', 'custom-event-manager' ) . '" />';
+            echo '</div>';
+
+            echo '<div class="cem-form-group cem-button-group">';
+            echo '<button type="submit" class="cem-rsvp-button cem-button-primary">' . esc_html__( 'RSVP Now', 'custom-event-manager' ) . '</button>';
+            echo '<span class="cem-rsvp-loading" style="display:none;">' . esc_html__( 'Processing...', 'custom-event-manager' ) . '</span>';
+            echo '</div>';
+
+            echo '<div class="cem-rsvp-message" style="display:none;"></div>';
+            echo '</form>';
+            echo '</div>';
         }
     }
 }
