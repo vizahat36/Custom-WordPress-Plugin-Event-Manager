@@ -30,15 +30,90 @@ A professional WordPress plugin for managing events with custom post types, admi
 
 ### Display Events with Shortcodes
 
-#### All Events
+#### List All Events
 ```
-[cem_events posts_per_page="10" orderby="date" order="DESC"]
+[event_list posts_per_page="10" orderby="meta_value" order="ASC"]
+```
+
+**Attributes:**
+- `posts_per_page` – Number of events per page (respects admin setting if not specified)
+- `orderby` – Sort field: `meta_value` (default, sorts by date), `date` (post date), `title`, `modified`
+- `meta_key` – Meta field for sorting (default: `_cem_event_date`)
+- `order` – Sort direction: `ASC` (ascending), `DESC` (descending)
+- `category` – Filter by event category slug (e.g., `category="conference"`)
+- `paged` – Current page (auto-detected from URL)
+
+**Examples:**
+```
+[event_list posts_per_page="5"]
+[event_list category="conference" orderby="date"]
+[event_list posts_per_page="20" order="DESC"]
 ```
 
 #### Single Event
 ```
-[cem_event_single id="123"]
+[event_single id="123"]
 ```
+
+**Attributes:**
+- `id` – Event post ID (required)
+
+**Example:**
+```
+[event_single id="42"]
+```
+
+#### Backward Compatibility
+- `[cem_events]` → Alias for `[event_list]`
+- `[cem_event_single]` → Alias for `[event_single]`
+
+### Shortcode Execution Flow (STEP 5)
+
+**[event_list] Execution:**
+```
+1. User adds shortcode to page/post content
+   ↓
+2. WordPress parses shortcode attributes
+   [event_list posts_per_page="10" category="webinar"]
+   ↓
+3. display_events_list() handler called
+   ├── Sanitize attributes (intval, sanitize_text_field)
+   ├── Retrieve default from admin setting if not specified
+   └── Validate order direction (ASC/DESC)
+   ↓
+4. Build WP_Query arguments
+   ├── post_type = 'event'
+   ├── posts_per_page = sanitized value
+   ├── orderby = meta_value (default)
+   ├── meta_key = _cem_event_date
+   └── tax_query = category filter (if provided)
+   ↓
+5. apply_filters('cem_event_query_args') for extensibility
+   ↓
+6. Execute WP_Query (NO DIRECT DB ACCESS)
+   ├── WordPress handles sanitization
+   ├── Prepared statements used internally
+   └── Results retrieved safely
+   ↓
+7. Output Buffering Started
+   ├── Check if posts exist
+   ├── Loop through posts
+   ├── For each post:
+   │   ├── Escape all data (esc_html, esc_attr)
+   │   ├── Get metadata safely (get_post_meta)
+   │   ├── Format dates using wp_date()
+   │   └── Render HTML fragment
+   ├── Render pagination if needed
+   └── Reset post data
+   ↓
+**Security Features:**
+- ✅ All input sanitized before use
+- ✅ All output escaped (esc_html, esc_attr, wp_kses_post)
+- ✅ Metadata retrieved via safe API (get_post_meta)
+- ✅ WP_Query handles prepared statements
+- ✅ Action hooks for extensibility (cem_before_read_more_link, cem_after_read_more_link)
+- ✅ Post status verification (only published posts shown to non-admins)
+- ✅ No direct SQL queries
 
 ### Plugin Settings
 
