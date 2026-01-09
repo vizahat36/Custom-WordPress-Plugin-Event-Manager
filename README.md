@@ -14,6 +14,309 @@ A professional WordPress plugin for managing events with custom post types, admi
 - **REST API Support**: Full REST API integration for developers.
 - **Security**: Nonce verification, input sanitization, capability checks.
 
+## REST API Endpoints (STEP 8)
+
+Custom Event Manager exposes REST API endpoints for headless WordPress applications and third-party integrations.
+
+### Base URL
+
+```
+https://yoursite.com/wp-json/cem/v1/
+```
+
+### Endpoints
+
+#### GET /events
+
+List all published events with pagination support.
+
+**Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| page | integer | 1 | Current page number |
+| per_page | integer | 10 | Events per page (1-100) |
+| orderby | string | date | Sort by: `date`, `title`, `event_date` |
+| order | string | DESC | Sort order: `ASC` or `DESC` |
+| category | string | - | Filter by event category slug |
+
+**Example Request:**
+```bash
+GET /wp-json/cem/v1/events?per_page=5&orderby=event_date&order=ASC
+```
+
+**Example Response:**
+```json
+[
+  {
+    "id": 123,
+    "title": {
+      "rendered": "Tech Conference 2026",
+      "raw": "Tech Conference 2026"
+    },
+    "content": {
+      "rendered": "<p>Join us for the biggest tech event...</p>",
+      "raw": "Join us for the biggest tech event..."
+    },
+    "excerpt": {
+      "rendered": "Join us for the biggest tech event...",
+      "raw": ""
+    },
+    "date": "2026-03-15",
+    "time": "09:00",
+    "location": "Convention Center, San Francisco",
+    "capacity": 500,
+    "rsvp_count": 247,
+    "rsvp_available": 253,
+    "categories": [
+      {
+        "id": 5,
+        "name": "Conference",
+        "slug": "conference"
+      }
+    ],
+    "link": "https://yoursite.com/event/tech-conference-2026/",
+    "featured_image": {
+      "id": 456,
+      "alt": "Conference venue",
+      "thumbnail": {
+        "url": "https://yoursite.com/wp-content/uploads/event-thumb.jpg",
+        "width": 150,
+        "height": 150
+      },
+      "medium": {
+        "url": "https://yoursite.com/wp-content/uploads/event-medium.jpg",
+        "width": 300,
+        "height": 300
+      },
+      "large": {
+        "url": "https://yoursite.com/wp-content/uploads/event-large.jpg",
+        "width": 1024,
+        "height": 768
+      },
+      "full": {
+        "url": "https://yoursite.com/wp-content/uploads/event-full.jpg",
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    "author": {
+      "id": 1,
+      "name": "Admin"
+    },
+    "published_date": "2026-01-10 14:30:00",
+    "modified_date": "2026-01-10 15:45:00"
+  }
+]
+```
+
+**Response Headers:**
+```
+X-WP-Total: 42
+X-WP-TotalPages: 9
+Link: <https://yoursite.com/wp-json/cem/v1/events?page=2>; rel="next"
+```
+
+#### GET /events/{id}
+
+Get a single event by ID.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| id | integer | Yes | Event post ID |
+
+**Example Request:**
+```bash
+GET /wp-json/cem/v1/events/123
+```
+
+**Example Response:**
+```json
+{
+  "id": 123,
+  "title": {
+    "rendered": "Tech Conference 2026",
+    "raw": "Tech Conference 2026"
+  },
+  "content": {
+    "rendered": "<p>Join us for the biggest tech event of the year...</p>",
+    "raw": "Join us for the biggest tech event of the year..."
+  },
+  "date": "2026-03-15",
+  "time": "09:00",
+  "location": "Convention Center, San Francisco",
+  "capacity": 500,
+  "rsvp_count": 247,
+  "rsvp_available": 253,
+  "categories": [
+    {
+      "id": 5,
+      "name": "Conference",
+      "slug": "conference"
+    }
+  ],
+  "link": "https://yoursite.com/event/tech-conference-2026/",
+  "featured_image": {...},
+  "author": {
+    "id": 1,
+    "name": "Admin"
+  }
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "code": "cem_event_not_found",
+  "message": "Event not found.",
+  "data": {
+    "status": 404
+  }
+}
+```
+
+### REST API Request Flow
+
+```
+HTTP Request → /wp-json/cem/v1/events
+        ↓
+WordPress REST API Router
+        ↓
+Permission Check (public access)
+        ↓
+Sanitize Parameters
+   ├── absint() for IDs and integers
+   ├── sanitize_text_field() for strings
+   └── Validate enum values
+        ↓
+Build WP_Query Arguments
+   ├── post_type = 'event'
+   ├── post_status = 'publish'
+   ├── Apply pagination (page, per_page)
+   ├── Apply sorting (orderby, order)
+   └── Apply filtering (tax_query)
+        ↓
+Execute WP_Query (Prepared Statements)
+        ↓
+Retrieve Event Meta Data
+   ├── _cem_event_date
+   ├── _cem_event_time
+   ├── _cem_event_location
+   └── _cem_event_capacity
+        ↓
+Get RSVP Count
+   ├── Query event_rsvp CPT
+   └── Count records for event ID
+        ↓
+Escape All Output
+   ├── esc_html() for text
+   ├── esc_url() for URLs
+   ├── esc_attr() for attributes
+   └── absint() for integers
+        ↓
+Format JSON Response
+   ├── Standard WordPress REST format
+   ├── Pagination headers (X-WP-Total)
+   └── HATEOAS links (prev, next)
+        ↓
+Return JSON Response (200 OK)
+```
+
+### REST API Security
+
+- **Permission Callbacks**: All endpoints require permission checks
+- **Public Access**: Events are public by default (customizable)
+- **Parameter Sanitization**: All input sanitized before use
+- **Output Escaping**: All data escaped before response
+- **Prepared Statements**: WP_Query handles SQL safely
+- **Rate Limiting**: Use WordPress caching plugins
+- **Authentication**: WordPress REST API authentication (JWT, OAuth)
+
+### REST API Customization
+
+**Filter event REST response:**
+```php
+add_filter( 'cem_rest_prepare_event', function( $event_data, $event ) {
+    // Add custom field
+    $event_data['custom_field'] = get_post_meta( $event->ID, '_custom_meta', true );
+    
+    // Remove sensitive data
+    unset( $event_data['author'] );
+    
+    return $event_data;
+}, 10, 2 );
+```
+
+**Restrict API access to authenticated users:**
+```php
+add_filter( 'rest_pre_dispatch', function( $result, $server, $request ) {
+    if ( strpos( $request->get_route(), '/cem/v1/' ) === 0 ) {
+        if ( ! is_user_logged_in() ) {
+            return new WP_Error(
+                'rest_forbidden',
+                __( 'Authentication required.' ),
+                array( 'status' => 401 )
+            );
+        }
+    }
+    return $result;
+}, 10, 3 );
+```
+
+**Usage Examples:**
+
+**Fetch events with JavaScript:**
+```javascript
+fetch('https://yoursite.com/wp-json/cem/v1/events?per_page=5')
+  .then(response => response.json())
+  .then(events => {
+    events.forEach(event => {
+      console.log(`${event.title.rendered} - ${event.date}`);
+    });
+  });
+```
+
+**Fetch with pagination:**
+```javascript
+async function getAllEvents() {
+  let page = 1;
+  let allEvents = [];
+  
+  while (true) {
+    const response = await fetch(`/wp-json/cem/v1/events?page=${page}`);
+    const events = await response.json();
+    
+    if (events.length === 0) break;
+    
+    allEvents = allEvents.concat(events);
+    page++;
+  }
+  
+  return allEvents;
+}
+```
+
+**cURL example:**
+```bash
+curl -X GET "https://yoursite.com/wp-json/cem/v1/events?per_page=10&orderby=event_date&order=ASC" \
+     -H "Content-Type: application/json"
+```
+
+**Python example:**
+```python
+import requests
+
+response = requests.get('https://yoursite.com/wp-json/cem/v1/events', params={
+    'per_page': 10,
+    'orderby': 'event_date',
+    'order': 'ASC'
+})
+
+events = response.json()
+for event in events:
+    print(f"{event['title']['rendered']} - {event['date']}")
+```
+
 ## Installation
 
 1. Download or clone the plugin into `/wp-content/plugins/custom-event-manager/`.
@@ -491,4 +794,7 @@ https://github.com/vizahat36/Custom-WordPress-Plugin-Event-Manager
 - ✅ STEP 3: Event metabox with date, time, location, capacity
 - ✅ STEP 4: Admin settings page (events per page, currency, RSVP)
 - ✅ STEP 5: Frontend shortcodes with WP_Query integration
+- ✅ STEP 6: RSVP functionality with AJAX and duplicate prevention
+- ✅ STEP 7: Email notifications with wp_mail() and filters
+- ✅ STEP 8: REST API endpoints for headless WordPress
 - Production-ready security implementation
