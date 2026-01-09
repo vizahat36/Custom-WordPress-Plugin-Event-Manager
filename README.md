@@ -138,7 +138,169 @@ This plugin follows WordPress security best practices:
 ✅ **Prepared Statements** – WP_Query prevents SQL injection  
 ✅ **No Direct DB Queries** – Uses WordPress APIs exclusively  
 
-## RSVP Functionality (STEP 6)
+## Email Notifications (STEP 7)
+
+Automatic emails are sent when users RSVP to events.
+
+### Email Trigger Logic
+
+```
+1. User submits RSVP via [event_single] form
+                    ↓
+2. RSVP validated and saved to database
+                    ↓
+3. Action hook fires: do_action('cem_rsvp_created', $rsvp_id, $event_id, $name, $email)
+                    ↓
+4. Email handler listens to cem_rsvp_created
+                    ↓
+5. Retrieve event details from database
+   ├── Event title (get_the_title)
+   ├── Event date (get_post_meta)
+   ├── Event time (get_post_meta)
+   ├── Event location (get_post_meta)
+   └── Event URL (get_permalink)
+                    ↓
+6. FORMAT & ESCAPE all data
+   ├── esc_html() for text content
+   ├── esc_url() for URLs
+   ├── sanitize_email() for email addresses
+   └── wp_date() for date formatting
+                    ↓
+7. Build confirmation email (to attendee)
+   ├── Subject: "RSVP Confirmation: {Event Title}"
+   ├── Body: Personalized message with event details
+   ├── Headers: From site admin, Content-Type UTF-8
+   └── Apply filters for customization
+                    ↓
+8. Send via wp_mail() to attendee
+   ├── wp_mail($to, $subject, $message, $headers)
+   ├── Returns: true on success, false on failure
+   └── Log error if failed
+                    ↓
+9. Build admin notification email
+   ├── Subject: "New RSVP: {Event} - {Attendee}"
+   ├── Body: Event details + attendee info
+   ├── Headers: Reply-To attendee email
+   └── Apply filters for customization
+                    ↓
+10. Send via wp_mail() to site admin
+    ├── To: get_option('admin_email')
+    ├── Log error if failed
+    └── Fires after-email action hooks
+                    ↓
+11. Return to AJAX handler (success)
+```
+
+### Email Customization via Filters
+
+**Customize confirmation email subject:**
+```php
+add_filter( 'cem_rsvp_confirmation_subject', function( $subject, $event, $name ) {
+    return sprintf( 'You\'re registered for %s!', $event );
+}, 10, 3 );
+```
+
+**Customize confirmation email body:**
+```php
+add_filter( 'cem_rsvp_confirmation_message', function( $message, $event, $name, $date, $time, $location ) {
+    $custom = "Dear {$name},\r\n\r\n";
+    $custom .= "Your RSVP for {$event} on {$date} has been confirmed!\r\n";
+    $custom .= "We'll see you at {$location}.\r\n\r\n";
+    $custom .= "Cheers!";
+    return $custom;
+}, 10, 6 );
+```
+
+**Customize admin notification subject:**
+```php
+add_filter( 'cem_admin_notification_subject', function( $subject, $event, $name, $email ) {
+    return "[New RSVP] {$event} - {$name}";
+}, 10, 4 );
+```
+
+**Customize email headers (add CC/BCC):**
+```php
+add_filter( 'cem_rsvp_confirmation_headers', function( $headers ) {
+    $headers[] = 'Cc: manager@example.com';
+    return $headers;
+});
+```
+
+**Hook into email send events:**
+```php
+// After confirmation email sent
+add_action( 'cem_after_confirmation_email', function( $sent, $to, $event ) {
+    if ( $sent ) {
+        error_log( "Confirmation sent to {$to} for {$event}" );
+    }
+}, 10, 3 );
+
+// After admin notification sent
+add_action( 'cem_after_admin_notification', function( $sent, $admin_email, $event ) {
+    // Log or trigger external webhook
+}, 10, 3 );
+```
+
+### Email Content
+
+**Confirmation Email (to Attendee):**
+```
+Subject: RSVP Confirmation: Tech Conference 2026
+
+Hi John Doe,
+
+Thank you for your RSVP! You have successfully registered for:
+
+Event: Tech Conference 2026
+Date: March 15, 2026
+Time: 10:00 AM
+Location: Convention Center
+
+View event details: https://example.com/event/tech-conference
+
+We look forward to seeing you there!
+
+Best regards,
+My Event Site
+```
+
+**Admin Notification:**
+```
+Subject: New RSVP: Tech Conference 2026 - John Doe
+
+A new RSVP has been submitted for your event:
+
+Event: Tech Conference 2026
+Date: March 15, 2026
+Time: 10:00 AM
+Location: Convention Center
+
+Attendee Details:
+Name: John Doe
+Email: john@example.com
+
+View event RSVPs: https://example.com/wp-admin/edit.php?post_type=event_rsvp&event_id=5
+```
+
+### Error Handling
+
+**Graceful Failures:**
+- If wp_mail() fails, error is logged (not shown to user)
+- RSVP is still saved (email failure doesn't prevent registration)
+- Logged to PHP error_log for debugging
+- Action hooks fire regardless of email success
+
+**WordPress Mail Configuration:**
+- Uses site's configured mail server (SMTP if configured)
+- Respects WordPress mail settings (from name, from address)
+- Compatible with WP Mail SMTP plugins
+- Falls back to PHP mail() function if no SMTP
+
+**Testing Emails:**
+```php
+// Test confirmation email manually
+do_action( 'cem_rsvp_created', 123, 5, 'Test User', 'test@example.com' );
+```
 
 When RSVP is enabled in **Events → Settings**, visitors can RSVP to events on the frontend.
 

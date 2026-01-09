@@ -26,6 +26,7 @@ require_once CEM_PLUGIN_DIR . 'includes/class-event-metabox.php';
 require_once CEM_PLUGIN_DIR . 'includes/class-event-shortcode.php';
 require_once CEM_PLUGIN_DIR . 'includes/class-event-settings.php';
 require_once CEM_PLUGIN_DIR . 'includes/class-event-rsvp.php';
+require_once CEM_PLUGIN_DIR . 'includes/class-email-notifications.php';
 require_once CEM_PLUGIN_DIR . 'includes/helpers.php';
 require_once CEM_PLUGIN_DIR . 'admin/admin-settings-page.php';
 
@@ -46,6 +47,7 @@ if ( ! class_exists( 'CEM_Plugin' ) ) {
             new CEM_Event_Shortcode();
             new CEM_Event_Settings();
             new CEM_Event_RSVP();
+            new CEM_Email_Notifications();
 
             add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend_assets' ) );
             add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_assets' ) );
