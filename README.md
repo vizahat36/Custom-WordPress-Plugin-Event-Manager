@@ -31,7 +31,7 @@ Custom Event Manager exposes REST API endpoints for headless WordPress applicati
 ### Base URL
 
 ```
-https://yoursite.com/wp-json/cem/v1/
+https://event-manager-demo.com/wp-json/cem/v1/
 ```
 
 ### Endpoints
